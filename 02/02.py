@@ -5,7 +5,7 @@ import argparse
 
 def intcodes_from_list(intcode_list):
     """generate a dict of index, intcode pairs from a list of intcodes"""
-    return {pos: int(code) for pos, code in enumerate(intcode_list)}
+    return {addr: int(code) for addr, code in enumerate(intcode_list)}
 
 def read_input(filename):
     """read input file and split into dict of intcodes.
