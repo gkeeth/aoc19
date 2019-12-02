@@ -4,7 +4,14 @@ from __future__ import print_function
 import argparse
 
 def intcodes_from_list(intcode_list):
-    """generate a dict of index, intcode pairs from a list of intcodes"""
+    """generate a dict of index, intcode pairs from a list of intcodes.
+
+    Note: this format was chosen because I didn't know if any operations would
+    result in values being stored at addresses outside of the predefined
+    "program space" and a dict would handle this situation gracefully. In
+    retrospect, this was not necessary and a list would have worked and been
+    simpler.
+    """
     return {addr: int(code) for addr, code in enumerate(intcode_list)}
 
 def read_input(filename):
@@ -103,15 +110,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     intcodes = read_input(args.input)
-    print("before running:")
-    print_intcodes(intcodes)
 
-    # set position 1 to 12, and position 2 with 2 (as stated in problem)
-    program = set_inputs(intcodes, 12, 2)
+    GOAL = 19690720 # one small step
 
-    result = run_program(program)
-    output = result[0]
-    print("after running:")
-    print(result)
-    print("output: {}".format(output))
+    # start with values up to 100
+    for n in range(100):
+        for v in range(100):
+            program = set_inputs(intcodes.copy(), n, v)
+            output = run_program(program)[0]
+            if output == GOAL:
+                print("solution found. n = {}, v = {}, solution = {}".format(
+                    n, v, 100 * n + v))
+                break
 
