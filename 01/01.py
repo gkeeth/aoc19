@@ -18,17 +18,27 @@ def get_module_masses(massfile):
     return module_masses
 
 def calculate_module_fuel(module_mass):
-    """calculate fuel required for module, based on module's mass"""
+    """calculate fuel required for module, based on module's mass.
 
-    fuel = (mass // 3) - 2 # // is floor division
-    return fuel
+    Also calculates the additional fuel required for the fuel itself."""
+
+    def fuel_by_mass(mass):
+        return (mass // 3) - 2 # // is floor division
+
+    # calculate fuel required by the module itself
+    module_fuel = fuel_by_mass(module_mass)
+
+    # calculate additional fuel required to launch the fuel
+    total_fuel = module_fuel
+    additional_fuel = fuel_by_mass(module_fuel)
+    while additional_fuel > 0:
+        total_fuel += additional_fuel
+        additional_fuel = fuel_by_mass(additional_fuel)
+
+    return total_fuel
 
 def calculate_total_fuel(module_fuels):
-    """sum up module fuels.
-
-    Note: this does not account for mass of fuel itself (i.e. does not solve
-    part 2)
-    """
+    """sum up module fuels."""
 
     total_fuel = sum(module_fuels)
     return total_fuel
