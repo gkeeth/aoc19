@@ -24,6 +24,17 @@ def print_intcodes(intcodes):
     # does not handle sparse "programs"
     print(intcodes.values())
 
+def set_inputs(intcodes, noun, verb):
+    """update program with inputs.
+
+    sets address 1 of the program to "noun"
+    sets address 2 of the program to "verb"
+
+    returns the modified program
+    """
+    intcodes[1] = noun
+    intcodes[2] = verb
+    return intcodes
 
 def run_program(intcodes):
     """run intcodes, which are stored as a dict of step: intcode pairs"""
@@ -60,6 +71,7 @@ def run_program(intcodes):
     # stop instruction)
     raise Exception("ran out of intcodes before program stop reached")
 
+
 def test():
     """run examples from the problem to make sure it works"""
 
@@ -95,10 +107,11 @@ if __name__ == "__main__":
     print_intcodes(intcodes)
 
     # set position 1 to 12, and position 2 with 2 (as stated in problem)
-    intcodes[1] = 12
-    intcodes[2] = 2
+    program = set_inputs(intcodes, 12, 2)
 
-    result = run_program(intcodes)
+    result = run_program(program)
+    output = result[0]
     print("after running:")
     print(result)
+    print("output: {}".format(output))
 
