@@ -23,6 +23,16 @@ def calculate_module_fuel(module_mass):
     fuel = (mass // 3) - 2 # // is floor division
     return fuel
 
+def calculate_total_fuel(module_fuels):
+    """sum up module fuels.
+
+    Note: this does not account for mass of fuel itself (i.e. does not solve
+    part 2)
+    """
+
+    total_fuel = sum(module_fuels)
+    return total_fuel
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="input file containing module masses")
@@ -30,6 +40,6 @@ if __name__ == "__main__":
 
     module_masses = get_module_masses(args.input)
     module_fuels = [calculate_module_fuel(mass) for mass in module_masses]
-    total_fuel = sum(module_fuels)
+    total_fuel = calculate_total_fuel(module_fuels)
 
     print(total_fuel)
