@@ -39,9 +39,6 @@ class Path(object):
                 loc[1] += vector[1]
                 self.points.append(tuple(loc))
 
-    @staticmethod
-    def mandist(coord):
-        return abs(coord[0]) + abs(coord[1])
 
     def find_intersections(self, other_path):
         """find intersections between self and another Path object.
@@ -56,12 +53,26 @@ class Path(object):
         return list(set_a.intersection(set_b))
 
     def find_closest_intersection_distance(self, other_path):
+
+        def mandist(coord):
+            return abs(coord[0]) + abs(coord[1])
+
         intersections = self.find_intersections(other_path)
-        distances = map(self.mandist, intersections)
+        distances = map(mandist, intersections)
+        return min(distances)
+
+    def find_shortest_intersection_distance(self, other_path):
+
+        def sigdist(p):
+            return self.points.index(p) + other_path.points.index(p) + 2
+
+        intersections = self.find_intersections(other_path)
+        distances = map(sigdist, intersections)
         return min(distances)
 
     def __init__(self, pathlist):
         self._parse_path(pathlist)
+
 
 def parse_input(filename):
     with open(filename, "r") as infile:
@@ -82,7 +93,7 @@ def test():
         print(path1b.points)
         raise Exception("path1b not parsed correctly")
 
-    # check intersection detection
+    # check intersection detection and distance/shortest path calculations
     path2a = Path(["R75", "D30", "R83", "U83", "L12", "D49", "R71", "U7",
         "L72"])
     path2b = Path(["U62", "R66", "U55", "R34", "D71", "R55", "D58", "R83"])
@@ -91,12 +102,23 @@ def test():
     path3b = Path(["U98", "R91", "D20", "R16", "D67", "R40", "U7", "R15",
         "U6","R7"])
     if path1a.find_closest_intersection_distance(path1b) != 6:
-        print("path1 intersections wrong")
+        print("path1 intersections wrong. incorrect result: {}"
+                .format(path1a.find_closest_intersection_distance(path1b)))
+    if path1a.find_shortest_intersection_distance(path1b) != 30:
+        print("path1 shortest intersection wrong. incorrect result: {}"
+                .format(path1a.find_shortest_intersection_distance(path1b)))
     if path2a.find_closest_intersection_distance(path2b) != 159:
-        print("path2 wrong. intersection distance: {}".format(
-            path2a.find_closest_intersection_distance(path2b)))
+        print("path2 intersections wrong. incorrect result: {}"
+                .format(path2a.find_closest_intersection_distance(path2b)))
+    if path2a.find_shortest_intersection_distance(path2b) != 610:
+        print("path2 shortest intersection wrong. incorrect result: {}"
+                .format(path2b.find_shortest_intersection_distance(path2b)))
     if path3a.find_closest_intersection_distance(path3b) != 135:
-        print("path3 wrong")
+        print("path3 intersections wrong. incorrect result: {}"
+                .format(path3a.find_closest_intersection_distance(path3b)))
+    if path3a.find_shortest_intersection_distance(path3b) != 410:
+        print("path3 shortest intersection wrong. incorrect result: {}"
+                .format(path3a.find_shortest_intersection_distance(path3b)))
 
 if __name__ == "__main__":
     test()
@@ -108,4 +130,6 @@ if __name__ == "__main__":
 
     print("closest intersection distance: {}".format(
         path1.find_closest_intersection_distance(path2)))
+    print("shortest intersection distance: {}".format(
+        path1.find_shortest_intersection_distance(path2)))
 
