@@ -21,11 +21,12 @@ def check_range(num):
 
 def check_adjacent_digits(num):
     s = str(num)
-    if (s[0] == s[1]
-            or s[1] == s[2]
-            or s[2] == s[3]
-            or s[3] == s[4]
-            or s[4] == s[5]):
+    # brute forcing the check is easy for 6 digits...
+    if (s[0] == s[1] != s[2]
+            or s[0] != s[1] == s[2] != s[3]
+            or s[1] != s[2] == s[3] != s[4]
+            or s[2] != s[3] == s[4] != s[5]
+            or s[3] != s[4] == s[5]):
         return True
     else:
         return False
