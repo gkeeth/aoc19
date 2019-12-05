@@ -31,18 +31,6 @@ def print_intcodes(intcodes):
     # does not handle sparse "programs"
     print(intcodes.values())
 
-# def set_inputs(intcodes, noun, verb):
-#     """update program with inputs.
-
-#     sets address 1 of the program to "noun"
-#     sets address 2 of the program to "verb"
-
-#     returns the modified program
-#     """
-#     intcodes[1] = noun
-#     intcodes[2] = verb
-#     return intcodes
-
 def run_program(intcodes):
     """run intcodes, which are stored as a dict of step: intcode pairs
 
