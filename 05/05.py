@@ -47,6 +47,10 @@ def run_program(intcodes):
             2: 3,
             3: 1,
             4: 1,
+            5: 2,
+            6: 2,
+            7: 3,
+            8: 3,
             99: 0
             }
 
@@ -64,8 +68,8 @@ def run_program(intcodes):
             param_modes /= 10
         return op, param_mode_list
 
-    def check_remaining_opcodes(last_opcode_addr, pc, number_of_params):
-        if pc + number_of_params > last_opcode_addr:
+    def check_remaining_opcodes():
+        if pc + num_params[op] > last:
             raise Exception("out of opcodes")
 
     def get_parameters():
@@ -84,27 +88,61 @@ def run_program(intcodes):
         op, param_modes = decode_intcode(intcodes[pc])
         if op == 1:
             # add
-            check_remaining_opcodes(last, pc, num_params[op])
+            check_remaining_opcodes()
             args = get_parameters()
             intcodes[args[2]] = intcodes[args[0]] + intcodes[args[1]]
             pc += num_params[op] + 1
         elif op == 2:
             # multiply
-            check_remaining_opcodes(last, pc, num_params[op])
+            check_remaining_opcodes()
             args = get_parameters()
             intcodes[args[2]] = intcodes[args[0]] * intcodes[args[1]]
             pc += num_params[op] + 1
         elif op == 3:
             # store input at address of parameter
-            check_remaining_opcodes(last, pc, num_params[op])
+            check_remaining_opcodes()
             args = get_parameters()
             intcodes[args[0]] = int(raw_input("input a number: ")) # ew python2
             pc += num_params[op] + 1
         elif op == 4:
             # print value at address of parameter
-            check_remaining_opcodes(last, pc, num_params[op])
+            check_remaining_opcodes()
             args = get_parameters()
             print(intcodes[args[0]])
+            pc += num_params[op] + 1
+        elif op == 5:
+            # jump if true (jump address in 2nd parameter)
+            check_remaining_opcodes()
+            args = get_parameters()
+            if intcodes[args[0]]:
+                pc = intcodes[args[1]]
+            else:
+                pc += num_params[op] + 1
+        elif op == 6:
+            # jump if false (jump address in 2nd parameter)
+            check_remaining_opcodes()
+            args = get_parameters()
+            if intcodes[args[0]]:
+                pc += num_params[op] + 1
+            else:
+                pc = intcodes[args[1]]
+        elif op == 7:
+            # less than (arg1 < arg2 ? arg3 <- 1 : arg3 <- 0)
+            check_remaining_opcodes()
+            args = get_parameters()
+            if intcodes[args[0]] < intcodes[args[1]]:
+                intcodes[args[2]] = 1
+            else:
+                intcodes[args[2]] = 0
+            pc += num_params[op] + 1
+        elif op == 8:
+            # equals (arg1 == arg2 ? arg3 <- 1 : arg3 <- 1
+            check_remaining_opcodes()
+            args = get_parameters()
+            if intcodes[args[0]] == intcodes[args[1]]:
+                intcodes[args[2]] = 1
+            else:
+                intcodes[args[2]] = 0
             pc += num_params[op] + 1
         elif op == 99:
             # end program
@@ -118,7 +156,7 @@ def run_program(intcodes):
     raise Exception("ran out of intcodes before program stop reached")
 
 def test():
-    print("this test program should output the same number that is input")
+    print("test1: output the same number that is input")
     intcodes1 = intcodes_from_list([3, 0, 4, 0, 99])
     run_program(intcodes1)
 
@@ -129,8 +167,39 @@ def test():
     else:
         print("test2 failed. results:")
         print_intcodes(run_program(intcodes2))
+    # input == 8 ? 1 : 0
+    print("test3: output 1 if the input equals 8, and zero otherwise")
+    intcodes3 = intcodes_from_list([3,9,8,9,10,9,4,9,99,-1,8])
+    run_program(intcodes3)
+    # input < 8 ? 1 : 0
+    print("test4: output 1 if the input is less than 8, and zero otherwise")
+    intcodes4 = intcodes_from_list([3,9,7,9,10,9,4,9,99,-1,8])
+    run_program(intcodes4)
+    # input == 8 ? 1 : 0
+    print("test5: output 1 if the input equals 8, and zero otherwise")
+    intcodes5 = intcodes_from_list([3,3,1108,-1,8,3,4,3,99])
+    run_program(intcodes5) # TODO: fails
+    # input < 8 ? 1 : 0
+    print("test6: output 1 if the input is less than 8, and zero otherwise")
+    intcodes6 = intcodes_from_list([3,3,1107,-1,8,3,4,3,99])
+    run_program(intcodes6)
+
+    print("test7: output 0 if input is 0, or 1 if input is non-zero")
+    intcodes7 = intcodes_from_list([3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9])
+    run_program(intcodes7)
+
+    print("test8: output 0 if input is 0, or 1 if input is non-zero")
+    intcodes8 = intcodes_from_list([3,3,1105,-1,9,1101,0,0,12,4,12,99,1])
+    run_program(intcodes8)
+
+    print("test9: output 999 if input is below 8, 1000 if input equals 8, or 1001 if input is above 8")
+    intcodes9 = intcodes_from_list([3,21,1008,21,8,20,1005,20,22,107,8,21,20,
+        1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,
+        1,46,1101,1000,1,20,4,20,1105,1,46,98,99])
+    run_program(intcodes9)
 
 if __name__ == "__main__":
+    # test()
     parser = argparse.ArgumentParser()
     parser.add_argument("input", help="input file containing intcodes")
     args = parser.parse_args()
