@@ -2,6 +2,7 @@
 from __future__ import print_function
 import argparse
 from itertools import permutations
+import asyncio
 
 def intcodes_from_list(intcode_list):
     """generate a dict of index, intcode pairs from a list of intcodes.
@@ -31,7 +32,7 @@ def print_intcodes(intcodes):
     # does not handle sparse "programs"
     print(intcodes.values())
 
-def run_program(intcodes, inputs=None, outputs=None):
+def run_program(intcodes, inputs=None, outputs=None, pc=0, feedback=False):
     """run intcodes, which are stored as a dict of step: intcode pairs
 
     intcodes encode the operation as well as the parameter mode. The two least
@@ -82,7 +83,6 @@ def run_program(intcodes, inputs=None, outputs=None):
                 parameters.append(intcodes[pc + n + 1])
         return parameters
 
-    pc = 0
     last = len(intcodes) - 1
 
     while pc <= last:
@@ -104,6 +104,9 @@ def run_program(intcodes, inputs=None, outputs=None):
             check_remaining_opcodes()
             args = get_parameters()
             if inputs is not None:
+                # if no input is available, return
+                if len(inputs) == 0:
+                    return intcodes, pc
                 intcodes[args[0]] = int(inputs.pop(0))
             else:
                 intcodes[args[0]] = int(raw_input("input a number: ")) # ew python2
@@ -160,7 +163,7 @@ def run_program(intcodes, inputs=None, outputs=None):
             pc += num_params[op] + 1
         elif op == 99:
             # end program
-            return intcodes
+            return intcodes, None
         else:
             # invalid
             raise Exception("invalid opcode: {}".format(intcodes[pc]))
@@ -169,19 +172,51 @@ def run_program(intcodes, inputs=None, outputs=None):
     # stop instruction)
     raise Exception("ran out of intcodes before program stop reached")
 
-def generate_phase_combinations():
-    options = [0, 1, 2, 3, 4]
+def generate_phase_combinations(feedback=False):
+    if feedback:
+        options = [5, 6, 7, 8, 9]
+    else:
+        options = [0, 1, 2, 3, 4]
     return permutations(options)
 
-def find_optimal_phase_sequence(program):
+def find_optimal_phase_sequence(program, feedback=False):
     best_seq = None
     best_thrust = 0
-    for seq in generate_phase_combinations():
+    for seq in generate_phase_combinations(feedback):
         result = 0
-        outputs = []
+        previous_outputs = []
+        # every program needs:
+        # - list of intcodes
+        # - pc (initially zero)
+        # - input vector
+        #   - first input is phase
+        #   - subsequent inputs are input signals (e.g. output from previous)
+        amp_states = []
+        previous_outputs = [0]
         for phase_setting in seq:
-            run_program(program, [phase_setting, result], outputs)
-            result = outputs.pop()
+            # set up initial states for each amplifier
+            inputs = [phase_setting]
+            pc = 0
+            amp_states.append((program.copy(), pc, inputs))
+        while amp_states:
+            # run amps. When they stall waiting for input, store state and go
+            # on to next amplifier
+            state = amp_states.pop(0)
+            intcodes = state[0]
+            pc = state[1]
+            inputs = state[2] + previous_outputs
+            previous_outputs = []
+            outputs = []
+
+            intcodes, pc = run_program(intcodes, inputs, outputs, pc, feedback=True)
+            previous_outputs = outputs
+            # if pc is none, amplifier has finished loop and halted.
+            # if pc isn't none, amplifier has stalled waiting for input and
+            # needs to resume when input is available.
+            if pc is not None:
+                amp_states.append((intcodes, pc, inputs))
+
+        result = previous_outputs.pop()
         if result > best_thrust:
             best_thrust = result
             best_seq = seq
@@ -213,6 +248,26 @@ def test():
     else:
         print("test3 passed")
 
+    # part 2
+    prog = [3,26,1001,26,-4,26,3,27,1002,27,2,27,1,27,26,27,4,27,1001,28,-1,28,1005,28,6,99,0,0,5]
+    goal_thrust = 139629729
+    goal_seq = (9,8,7,6,5)
+    thrust, seq = find_optimal_phase_sequence(prog, feedback=True)
+    if thrust != goal_thrust or seq != goal_seq:
+        print("test4 failed. goal thrust: {}, calculated thrust: {}, goal sequence: {}, calculated sequence: {}".format(goal_thrust, thrust, goal_seq, seq))
+    else:
+        print("test4 passed")
+    prog = [3,52,1001,52,-5,52,3,53,1,52,56,54,1007,54,5,55,1005,55,26,1001,54,
+            -5,54,1105,1,12,1,53,54,53,1008,54,0,55,1001,55,1,55,2,53,55,53,4,
+            53,1001,56,-1,56,1005,56,6,99,0,0,0,0,10]
+    goal_thrust = 18216
+    goal_seq = (9,7,8,5,6)
+    thrust, seq = find_optimal_phase_sequence(prog, feedback=True)
+    if thrust != goal_thrust or seq != goal_seq:
+        print("test5 failed. goal thrust: {}, calculated thrust: {}, goal sequence: {}, calculated sequence: {}".format(goal_thrust, thrust, goal_seq, seq))
+    else:
+        print("test5 passed")
+
 if __name__ == "__main__":
     test()
     parser = argparse.ArgumentParser()
@@ -220,7 +275,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     intcodes = read_input(args.input)
+    print("PART 1")
     thrust, seq = find_optimal_phase_sequence(intcodes)
+    print("thrust: {}".format(thrust))
+    print("phase sequence: {}".format(seq))
+
+    print("PART 2")
+    thrust, seq = find_optimal_phase_sequence(intcodes, feedback=True)
     print("thrust: {}".format(thrust))
     print("phase sequence: {}".format(seq))
 
