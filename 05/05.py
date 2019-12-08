@@ -61,11 +61,11 @@ def run_program(intcodes):
         first parameter is first element in list)
         """
         op = intcode % 100
-        param_modes = intcode / 100
+        param_modes = intcode // 100
         param_mode_list = []
         for _ in range(num_params[op]):
             param_mode_list.append(param_modes % 10)
-            param_modes /= 10
+            param_modes //= 10
         return op, param_mode_list
 
     def check_remaining_opcodes():
@@ -136,7 +136,7 @@ def run_program(intcodes):
                 intcodes[args[2]] = 0
             pc += num_params[op] + 1
         elif op == 8:
-            # equals (arg1 == arg2 ? arg3 <- 1 : arg3 <- 1
+            # equals (arg1 == arg2 ? arg3 <- 1 : arg3 <- 1)
             check_remaining_opcodes()
             args = get_parameters()
             if intcodes[args[0]] == intcodes[args[1]]:
