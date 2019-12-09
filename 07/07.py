@@ -2,7 +2,7 @@
 from __future__ import print_function
 import argparse
 from itertools import permutations
-import asyncio
+from copy import copy
 
 def intcodes_from_list(intcode_list):
     """generate a dict of index, intcode pairs from a list of intcodes.
@@ -197,7 +197,7 @@ def find_optimal_phase_sequence(program, feedback=False):
             # set up initial states for each amplifier
             inputs = [phase_setting]
             pc = 0
-            amp_states.append((program.copy(), pc, inputs))
+            amp_states.append((copy(program), pc, inputs))
         while amp_states:
             # run amps. When they stall waiting for input, store state and go
             # on to next amplifier
