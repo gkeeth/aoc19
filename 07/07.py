@@ -4,173 +4,179 @@ import argparse
 from itertools import permutations
 from copy import copy
 
-def intcodes_from_list(intcode_list):
-    """generate a dict of index, intcode pairs from a list of intcodes.
-
-    Note: this format was chosen because I didn't know if any operations would
-    result in values being stored at addresses outside of the predefined
-    "program space" and a dict would handle this situation gracefully. In
-    retrospect, this was not necessary and a list would have worked and been
-    simpler.
-    """
-    return {addr: int(code) for addr, code in enumerate(intcode_list)}
-
 def read_input(filename):
-    """read input file and split into dict of intcodes.
-
-    Output dict is indexed by the codes' integer positions."""
+    """read input file and return list of raw intcodes."""
 
     with open(args.input, "r") as infile:
         raw_intcodes = infile.readlines()[0].strip().split(",")
-        intcodes = intcodes_from_list(raw_intcodes)
 
-    return intcodes
+    return raw_intcodes
 
-def print_intcodes(intcodes):
-    """print intcodes as a comma-separated list"""
+class IntcodeComputer(object):
+    def __init__(self, raw_intcode_list, initial_inputs=[]):
+        self.pc = 0
+        self.input_queue = initial_inputs
+        self.output_queue = []
+        self.intcodes = self.intcodes_from_list(raw_intcode_list)
 
-    # does not handle sparse "programs"
-    print(intcodes.values())
+    def intcodes_from_list(self, intcode_list):
+        """generate a dict of index, intcode pairs from a list of intcodes.
 
-def run_program(intcodes, inputs=None, outputs=None, pc=0, feedback=False):
-    """run intcodes, which are stored as a dict of step: intcode pairs
-
-    intcodes encode the operation as well as the parameter mode. The two least
-    significant digits are the operation. The most significant digit(s) are the
-    parameter mode, one digit per parameter, read right-to-left (hundreds place
-    is 1st parameter, thousands place is 2nd parameter, etc.)
-    parameter mode 0: parameters is a position (an address)
-    parameter mode 1: parameter is immediate (a literal value)
-    """
-
-    num_params = {
-            1: 3,
-            2: 3,
-            3: 1,
-            4: 1,
-            5: 2,
-            6: 2,
-            7: 3,
-            8: 3,
-            98: 0,
-            99: 0
-            }
-
-    def decode_intcode(intcode):
-        """decode intcode into its operation and the parameter modes.
-
-        returns tuple of op and list of the parameter modes, in order (mode for
-        first parameter is first element in list)
+        Note: this format was chosen because I didn't know if any operations
+        would result in values being stored at addresses outside of the
+        predefined "program space" and a dict would handle this situation
+        gracefully. In retrospect, this was not necessary and a list would have
+        worked and been simpler.
         """
-        op = intcode % 100
-        param_modes = intcode // 100
-        param_mode_list = []
-        for _ in range(num_params[op]):
-            param_mode_list.append(param_modes % 10)
-            param_modes //= 10
-        return op, param_mode_list
+        return {addr: int(code) for addr, code in enumerate(intcode_list)}
 
-    def check_remaining_opcodes():
-        if pc + num_params[op] > last:
-            raise Exception("out of opcodes")
+    def print_intcodes(self):
+        """print intcodes as a comma-separated list"""
 
-    def get_parameters():
-        parameters = []
-        for n in range(num_params[op]):
-            if param_modes[n]:
-                parameters.append(pc + n + 1)
-            else:
-                parameters.append(intcodes[pc + n + 1])
-        return parameters
+        # does not handle sparse "programs"
+        print(self.intcodes.values())
 
-    last = len(intcodes) - 1
+    def add_to_input_queue(self, inlist):
+        self.input_queue += inlist
 
-    while pc <= last:
-        op, param_modes = decode_intcode(intcodes[pc])
-        if op == 1:
-            # add
-            check_remaining_opcodes()
-            args = get_parameters()
-            intcodes[args[2]] = intcodes[args[0]] + intcodes[args[1]]
-            pc += num_params[op] + 1
-        elif op == 2:
-            # multiply
-            check_remaining_opcodes()
-            args = get_parameters()
-            intcodes[args[2]] = intcodes[args[0]] * intcodes[args[1]]
-            pc += num_params[op] + 1
-        elif op == 3:
-            # store input at address of parameter
-            check_remaining_opcodes()
-            args = get_parameters()
-            if inputs is not None:
+    def get_outputs(self):
+        outlist = copy(self.output_queue)
+        self.output_queue = []
+        return outlist
+
+    def run_program(self):
+        """run intcodes, which are stored as a dict of step: intcode pairs
+
+        intcodes encode the operation as well as the parameter mode. The two least
+        significant digits are the operation. The most significant digit(s) are the
+        parameter mode, one digit per parameter, read right-to-left (hundreds place
+        is 1st parameter, thousands place is 2nd parameter, etc.)
+        parameter mode 0: parameters is a position (an address)
+        parameter mode 1: parameter is immediate (a literal value)
+        """
+
+        num_params = {
+                1: 3,
+                2: 3,
+                3: 1,
+                4: 1,
+                5: 2,
+                6: 2,
+                7: 3,
+                8: 3,
+                98: 0,
+                99: 0
+                }
+
+        def decode_intcode(intcode):
+            """decode intcode into its operation and the parameter modes.
+
+            returns tuple of op and list of the parameter modes, in order (mode for
+            first parameter is first element in list)
+            """
+            op = intcode % 100
+            param_modes = intcode // 100
+            param_mode_list = []
+            for _ in range(num_params[op]):
+                param_mode_list.append(param_modes % 10)
+                param_modes //= 10
+            return op, param_mode_list
+
+        def check_remaining_opcodes():
+            if self.pc + num_params[op] > last:
+                raise Exception("out of opcodes")
+
+        def get_parameters():
+            parameters = []
+            for n in range(num_params[op]):
+                if param_modes[n]:
+                    parameters.append(self.pc + n + 1)
+                else:
+                    parameters.append(self.intcodes[self.pc + n + 1])
+            return parameters
+
+        last = len(self.intcodes) - 1
+
+        while self.pc <= last:
+            op, param_modes = decode_intcode(self.intcodes[self.pc])
+            if op == 1:
+                # add
+                check_remaining_opcodes()
+                args = get_parameters()
+                self.intcodes[args[2]] = self.intcodes[args[0]] + self.intcodes[args[1]]
+                self.pc += num_params[op] + 1
+            elif op == 2:
+                # multiply
+                check_remaining_opcodes()
+                args = get_parameters()
+                self.intcodes[args[2]] = self.intcodes[args[0]] * self.intcodes[args[1]]
+                self.pc += num_params[op] + 1
+            elif op == 3:
+                # store input at address of parameter
+                check_remaining_opcodes()
+                args = get_parameters()
                 # if no input is available, return
-                if len(inputs) == 0:
-                    return intcodes, pc
-                intcodes[args[0]] = int(inputs.pop(0))
+                if len(self.input_queue) == 0:
+                    return self.intcodes, self.pc
+                self.intcodes[args[0]] = int(self.input_queue.pop(0))
+                self.pc += num_params[op] + 1
+            elif op == 4:
+                # print value at address of parameter
+                check_remaining_opcodes()
+                args = get_parameters()
+                self.output_queue.append(self.intcodes[args[0]])
+                self.pc += num_params[op] + 1
+            elif op == 5:
+                # jump if true (jump address in 2nd parameter)
+                check_remaining_opcodes()
+                args = get_parameters()
+                if self.intcodes[args[0]]:
+                    self.pc = self.intcodes[args[1]]
+                else:
+                    self.pc += num_params[op] + 1
+            elif op == 6:
+                # jump if false (jump address in 2nd parameter)
+                check_remaining_opcodes()
+                args = get_parameters()
+                if self.intcodes[args[0]]:
+                    self.pc += num_params[op] + 1
+                else:
+                    self.pc = self.intcodes[args[1]]
+            elif op == 7:
+                # less than (arg1 < arg2 ? arg3 <- 1 : arg3 <- 0)
+                check_remaining_opcodes()
+                args = get_parameters()
+                if self.intcodes[args[0]] < self.intcodes[args[1]]:
+                    self.intcodes[args[2]] = 1
+                else:
+                    self.intcodes[args[2]] = 0
+                self.pc += num_params[op] + 1
+            elif op == 8:
+                # equals (arg1 == arg2 ? arg3 <- 1 : arg3 <- 1)
+                check_remaining_opcodes()
+                args = get_parameters()
+                if self.intcodes[args[0]] == self.intcodes[args[1]]:
+                    self.intcodes[args[2]] = 1
+                else:
+                    self.intcodes[args[2]] = 0
+                self.pc += num_params[op] + 1
+            elif op == 98:
+                # print entire program
+                check_remaining_opcodes()
+                print("program counter: {}".format(self.pc))
+                print("program:")
+                print(self.intcodes)
+                self.pc += num_params[op] + 1
+            elif op == 99:
+                # end program
+                return self.intcodes, None
             else:
-                intcodes[args[0]] = int(raw_input("input a number: ")) # ew python2
-            pc += num_params[op] + 1
-        elif op == 4:
-            # print value at address of parameter
-            check_remaining_opcodes()
-            args = get_parameters()
-            if outputs is not None:
-                outputs.append(intcodes[args[0]])
-            else:
-                print(intcodes[args[0]])
-            pc += num_params[op] + 1
-        elif op == 5:
-            # jump if true (jump address in 2nd parameter)
-            check_remaining_opcodes()
-            args = get_parameters()
-            if intcodes[args[0]]:
-                pc = intcodes[args[1]]
-            else:
-                pc += num_params[op] + 1
-        elif op == 6:
-            # jump if false (jump address in 2nd parameter)
-            check_remaining_opcodes()
-            args = get_parameters()
-            if intcodes[args[0]]:
-                pc += num_params[op] + 1
-            else:
-                pc = intcodes[args[1]]
-        elif op == 7:
-            # less than (arg1 < arg2 ? arg3 <- 1 : arg3 <- 0)
-            check_remaining_opcodes()
-            args = get_parameters()
-            if intcodes[args[0]] < intcodes[args[1]]:
-                intcodes[args[2]] = 1
-            else:
-                intcodes[args[2]] = 0
-            pc += num_params[op] + 1
-        elif op == 8:
-            # equals (arg1 == arg2 ? arg3 <- 1 : arg3 <- 1)
-            check_remaining_opcodes()
-            args = get_parameters()
-            if intcodes[args[0]] == intcodes[args[1]]:
-                intcodes[args[2]] = 1
-            else:
-                intcodes[args[2]] = 0
-            pc += num_params[op] + 1
-        elif op == 98:
-            # print entire program
-            check_remaining_opcodes()
-            print("program counter: {}".format(pc))
-            print("program:")
-            print(intcodes)
-            pc += num_params[op] + 1
-        elif op == 99:
-            # end program
-            return intcodes, None
-        else:
-            # invalid
-            raise Exception("invalid opcode: {}".format(intcodes[pc]))
+                # invalid
+                raise Exception("invalid opcode: {}".format(self.intcodes[self.pc]))
 
-    # should never reach this point (only if end is reached before program
-    # stop instruction)
-    raise Exception("ran out of intcodes before program stop reached")
+        # should never reach this point (only if end is reached before program
+        # stop instruction)
+        raise Exception("ran out of intcodes before program stop reached")
 
 def generate_phase_combinations(feedback=False):
     if feedback:
@@ -185,36 +191,26 @@ def find_optimal_phase_sequence(program, feedback=False):
     for seq in generate_phase_combinations(feedback):
         result = 0
         previous_outputs = []
-        # every program needs:
-        # - list of intcodes
-        # - pc (initially zero)
-        # - input vector
-        #   - first input is phase
-        #   - subsequent inputs are input signals (e.g. output from previous)
-        amp_states = []
+        running_amps = []
         previous_outputs = [0]
         for phase_setting in seq:
             # set up initial states for each amplifier
             inputs = [phase_setting]
-            pc = 0
-            amp_states.append((copy(program), pc, inputs))
-        while amp_states:
+            running_amps.append(IntcodeComputer(copy(program), inputs))
+
+        while running_amps:
             # run amps. When they stall waiting for input, store state and go
             # on to next amplifier
-            state = amp_states.pop(0)
-            intcodes = state[0]
-            pc = state[1]
-            inputs = state[2] + previous_outputs
-            previous_outputs = []
-            outputs = []
+            amp = running_amps.pop(0)
+            amp.add_to_input_queue(previous_outputs)
 
-            intcodes, pc = run_program(intcodes, inputs, outputs, pc, feedback=True)
-            previous_outputs = outputs
+            intcodes, pc = amp.run_program()
+            previous_outputs = amp.get_outputs()
             # if pc is none, amplifier has finished loop and halted.
             # if pc isn't none, amplifier has stalled waiting for input and
             # needs to resume when input is available.
             if pc is not None:
-                amp_states.append((intcodes, pc, inputs))
+                running_amps.append(amp)
 
         result = previous_outputs.pop()
         if result > best_thrust:
