@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 from __future__ import print_function, division
+from math import atan2
 
 class AsteroidMap(object):
     def __init__(self, inmap):
@@ -11,15 +12,7 @@ class AsteroidMap(object):
         for y, row in enumerate(self.map):
             for x, col in enumerate(row):
                 if self.map[y][x] == "#" and not (y == y0 and x == x0):
-                    if x == x0:
-                        # undefined slope
-                        if y - y0 > 0:
-                            vec = ("V", "U") # vertical up
-                        else:
-                            vec = ("V", "D") # vertical down
-                    else:
-                        vec = ((y - y0) / (x - x0), "R" if x - x0 > 0 else "L")
-                    hit_vectors.add(vec)
+                    hit_vectors.add(atan2(y-y0, x-x0))
         return len(hit_vectors)
 
 
@@ -42,6 +35,34 @@ class AsteroidMap(object):
                         max_y = y
 
         return (max_x, max_y), max_vis
+
+class AsteroidDefenseLaser(object):
+    def __init__(self, asteroid_map, x, y):
+        self.asteroid_map = asteroid_map
+        self.location = (x, y)
+        self.target = (x-1, 0) # aim 1 step behind top dead center
+        self.shots = 0
+
+    def pick_next_target(self):
+        # increment self.target appropriately
+        current_angle = atan2(self.target[1], self.target[0])
+        # 1. pick next vector
+        # TODO
+
+        # 2. target asteroid along that vector that is closest to laser
+        # TODO
+
+        # 3. if no target exists along vector, pick a new vector (go to 1)
+        # TODO
+
+
+    def fire_lazer(self):
+        # hello 2007
+        self.pick_next_target()
+        self.shots += 1
+        self.asteroid_map.map[target[1]][target[0]] = str(self.shots)
+        return target
+
 
 def test():
     inmaps = [
