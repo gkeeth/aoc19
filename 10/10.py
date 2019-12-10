@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 from __future__ import print_function, division
-from math import atan2
+from math import atan2, pi
 
 class AsteroidMap(object):
     def __init__(self, inmap):
@@ -37,16 +37,21 @@ class AsteroidMap(object):
         return (max_x, max_y), max_vis
 
 class AsteroidDefenseLaser(object):
-    def __init__(self, asteroid_map, x, y):
+    def __init__(self, asteroid_map, x0, y0):
         self.asteroid_map = asteroid_map
-        self.location = (x, y)
-        self.target = (x-1, 0) # aim 1 step behind top dead center
+        self.location = (x0, y0)
+        self.target = (x0-1, 0) # aim 1 step behind top dead center
         self.shots = 0
+        angles = []
+        for y, row in enumerate(asteroid_map.map):
+            for x, col in enumerate(row):
+                angles.append(atan2(y - y0, x - x0) - pi / 2)
+        self.angles = sorted(angles)
 
     def pick_next_target(self):
         # increment self.target appropriately
         current_angle = atan2(self.target[1], self.target[0])
-        # 1. pick next vector
+        # 1. pick next vector (angle)
         # TODO
 
         # 2. target asteroid along that vector that is closest to laser
