@@ -19,8 +19,8 @@ next_direction = {
         }
 
 direction_vector = {
-        "up": (0, 1),
-        "down": (0, -1),
+        "up": (0, -1),
+        "down": (0, 1),
         "left": (-1, 0),
         "right": (1, 0)
         }
@@ -55,10 +55,31 @@ class PaintingRobot(object):
         # if pc is None, program halted and painting is complete
         return pc is not None
 
-    def run(self):
+    def run(self, start_on_white=False):
+        if start_on_white:
+            self.painted_tiles[self.location] = 1
         while self.step():
             pass
         print("finished painting {} tiles".format(self.count_painted_tiles()))
+
+    def display(self):
+        # determine dimensions of painted area
+        xmin = xmax = ymin = ymax = 0
+        for x, y in self.painted_tiles:
+            xmin = min(x, xmin)
+            xmax = max(x, xmax)
+            ymin = min(y, ymin)
+            ymax = max(y, ymax)
+
+        for y in range(ymin, ymax + 1):
+            row = []
+            for x in range(xmin, xmax + 1):
+                if ((x, y) in self.painted_tiles
+                        and self.painted_tiles[(x, y)] == 1): # white
+                    row.append("o")
+                else:
+                    row.append(" ")
+            print("".join(row))
 
 
 class IntcodeComputer(object):
@@ -256,4 +277,9 @@ def read_input(filename):
 
 if __name__ == "__main__":
     robot = PaintingRobot(read_input("input.txt"))
+    print("part 1")
     robot.run()
+    print("part 2")
+    robot = PaintingRobot(read_input("input.txt"))
+    robot.run(start_on_white=True)
+    robot.display()
