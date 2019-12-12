@@ -2,7 +2,8 @@
 
 from __future__ import print_function, division
 from itertools import combinations
-from math import copysign
+from functools import reduce
+from copy import copy
 import re
 
 class Moon(object):
@@ -67,30 +68,43 @@ def total_energy(moonlist):
         energy += m.calculate_total_energy()
     return energy
 
-def get_current_state(moonlist):
+def get_current_state(moonlist, dim):
     positions = []
     velocities = []
     for moon in moonlist:
-        positions.append(tuple(moon.position))
-        velocities.append(tuple(moon.velocity))
+        positions.append(moon.position[dim])
+        velocities.append(moon.velocity[dim])
     return (tuple(positions), tuple(velocities))
 
-def save_state(moonlist, states, step):
-    state = get_current_state(moonlist)
+def save_state(moonlist, states, dim, step):
+    state = get_current_state(moonlist, dim)
     if state in states:
-        print("repeating state found; timesteps {} and {}".format(states[state], step))
         return True
     else:
         states[state] = step
         return False
 
+def gcd(a, b):
+    if b == 0:
+        return a
+    return gcd(b, a % b)
+
+def lcm(a, b):
+    return abs(a * b) // gcd(a, b)
+
+
 def find_repeated_state(moonlist):
     print("searching for repeating states...")
-    step = 0
-    states = {}
-    while not save_state(moonlist, states, step):
-        timestep(moonlist)
-        step += 1
+    repeats = []
+    for n in range(3):
+        step = 0
+        states = {}
+        while not save_state(moonlist, states, n, step):
+            timestep(moonlist)
+            step += 1
+        print("found repeating state for dimension: {} at step: {}".format(n, step))
+        repeats.append(step)
+    print("period: {}".format(reduce(lcm, repeats)))
 
 def test():
     intext = "<x=-1, y=0, z=2>\n\
@@ -108,7 +122,8 @@ def test():
     energy = total_energy(moonlist)
     print(energy)
 
-    find_repeated_state(parse_input_into_moons(intext))
+    find_repeated_state(moonlist)
+
 
 if __name__ == "__main__":
     test()
