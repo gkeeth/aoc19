@@ -28,7 +28,6 @@ class Moon(object):
     def calculate_total_energy(self):
         return self.calculate_potential_energy() * self.calculate_kinetic_energy()
 
-
 def parse_input_into_moons(input_lines):
     moons = []
     prog = re.compile(r"\<x=(-*\d+), y=(-*\d+), z=(-*\d+)\>")
@@ -68,6 +67,30 @@ def total_energy(moonlist):
         energy += m.calculate_total_energy()
     return energy
 
+def get_current_state(moonlist):
+    positions = []
+    velocities = []
+    for moon in moonlist:
+        positions.append(tuple(moon.position))
+        velocities.append(tuple(moon.velocity))
+    return (tuple(positions), tuple(velocities))
+
+def save_state(moonlist, states, step):
+    state = get_current_state(moonlist)
+    if state in states:
+        print("repeating state found; timesteps {} and {}".format(states[state], step))
+        return True
+    else:
+        states[state] = step
+        return False
+
+def find_repeated_state(moonlist):
+    print("searching for repeating states...")
+    step = 0
+    states = {}
+    while not save_state(moonlist, states, step):
+        timestep(moonlist)
+        step += 1
 
 def test():
     intext = "<x=-1, y=0, z=2>\n\
@@ -85,14 +108,21 @@ def test():
     energy = total_energy(moonlist)
     print(energy)
 
+    find_repeated_state(parse_input_into_moons(intext))
+
 if __name__ == "__main__":
     test()
     with open("input.txt", "r") as infile:
         inlines = infile.read()
+    # part 1
     moons = parse_input_into_moons(inlines)
     for n in range(1000):
         timestep(moons)
     print("total energy: {}".format(total_energy(moons)))
+
+    # part 2
+    moons = parse_input_into_moons(inlines)
+    find_repeated_state(moons)
 
 
 
