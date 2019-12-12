@@ -69,6 +69,7 @@ def total_energy(moonlist):
     return energy
 
 def get_current_state(moonlist, dim):
+    # get state for one dimension (x, y, z)
     positions = []
     velocities = []
     for moon in moonlist:
@@ -77,6 +78,7 @@ def get_current_state(moonlist, dim):
     return (tuple(positions), tuple(velocities))
 
 def save_state(moonlist, states, dim, step):
+    # only save state for one dimension
     state = get_current_state(moonlist, dim)
     if state in states:
         return True
@@ -96,6 +98,7 @@ def lcm(a, b):
 def find_repeated_state(moonlist):
     print("searching for repeating states...")
     repeats = []
+    # solve each dimension (x,y,z) independently, then find LCM
     for n in range(3):
         step = 0
         states = {}
